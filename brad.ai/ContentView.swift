@@ -14,26 +14,26 @@ struct HomeScreen: View {
         sortDescriptors: [NSSortDescriptor(keyPath: \Conversation.conversationID, ascending: false)]
     ) private var conversations: FetchedResults<Conversation>
     @State private var isExpanded = false // Tracks view mode (horizontal or vertical)
-
+    
     
     private func sendPrompt() {
         guard !promptText.isEmpty else { return }
-
+        
         // Show the new view immediately
         DispatchQueue.main.async {
             withAnimation(.easeInOut(duration: 0.5)) {
                 showNewView = true
             }
         }
-
-        let apiKey = "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"
+        
+        let apiKey = ""
         let apiURL = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
-
+        
         var request = URLRequest(url: apiURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-
+        
         let requestBody: [String: Any] = [
             "model": "llama-3.3-70b-versatile",
             "messages": [["role": "user", "content": promptText]],
@@ -42,15 +42,15 @@ struct HomeScreen: View {
             "stream": false,
             "top_p": 1
         ]
-
+        
         request.httpBody = try? JSONSerialization.data(withJSONObject: requestBody, options: [])
-
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {
                 print("API Request failed: \(error?.localizedDescription ?? "Unknown error")")
                 return
             }
-
+            
             do {
                 if let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let choices = jsonResponse["choices"] as? [[String: Any]],
@@ -69,7 +69,7 @@ struct HomeScreen: View {
             }
         }.resume()
     }
-
+    
     var body: some View {
         NavigationView{
             ZStack {
