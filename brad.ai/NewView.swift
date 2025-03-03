@@ -9,7 +9,8 @@ struct NewView: View {
     @State private var conversationID: Int = 1 // Unique ID for conversation
     @State private var conversationName: String = "" // Name of conversation
     @Environment(\.colorScheme) var colorScheme // Detect dark/light mode
-    
+    @State private var showCopyAlert: Bool = false // State variable for showing alert
+
     var body: some View {
         VStack {
             ScrollViewReader { scrollView in
@@ -40,12 +41,49 @@ struct NewView: View {
                                         .foregroundColor(Color.green)
                                     
                                     if let aiResponse = aiResponse {
-                                        Text(makeBold(text: aiResponse))
-                                            .font(.custom("LexendDeca-Regular", size: 16))
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            VStack(alignment: .leading, spacing: 8) {
+                                                let formattedResponse = formatResponse(aiResponse)
+                                                
+                                                Text(formattedResponse.textOutsideCode)
+                                                    .font(.custom("LexendDeca-Regular", size: 16))
+                                                    .foregroundColor(.primary)
+                                                
+                                                if !formattedResponse.codeBlocks.isEmpty {
+                                                    ForEach(formattedResponse.codeBlocks, id: \.self) { codeBlock in
+                                                        VStack(alignment: .leading, spacing: 8) {
+                                                            ScrollView(.horizontal, showsIndicators: false) {
+                                                                Text(codeBlock)
+                                                                    .font(.system(.body, design: .monospaced))
+                                                                    .foregroundColor(.white)
+                                                                    .padding()
+                                                                    .background(Color.black)
+                                                                    .cornerRadius(8)
+                                                            }
+                                                            
+                                                            Button(action: {
+                                                                UIPasteboard.general.string = codeBlock
+                                                                showCopyAlert = true // Trigger alert
+                                                            }) {
+                                                                HStack(spacing: 2){
+                                                                    Image(systemName: "doc.on.doc")
+                                                                        .font(.subheadline)
+                                                                    Text("Copy Code")
+                                                                        .font(.custom("LexendDeca-Regular", size: 16))
+                                                                }
+                                                                .foregroundColor(.primary)
+                                                            }
+                                                            .alert(isPresented: $showCopyAlert) {
+                                                                Alert(title: Text("Success"), message: Text("Code copied successfully!"), dismissButton: .default(Text("OK")))
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                             .padding()
-                                            .background(Color.purple.opacity(0.2))
-                                            .foregroundColor(.primary)
+                                            .background(Color.purple.opacity(0.2)) // Violet background for the full response
                                             .clipShape(RoundedRectangle(cornerRadius: 16))
+                                        }
                                     } else {
                                         LoadingDotsView()
                                             .frame(height: 24)
@@ -156,14 +194,14 @@ struct NewView: View {
     }
     
     private func fetchAIResponse(for prompt: String, completion: @escaping (String) -> Void) {
-        let apiKey = "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"
+        let apiKey = "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"
         let apiURL = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
         
         var request = URLRequest(url: apiURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-
+        
         let requestBody: [String: Any] = [
             "model": "llama-3.3-70b-versatile",
             "messages": [["role": "user", "content": prompt]],
@@ -172,16 +210,16 @@ struct NewView: View {
             "stream": false,
             "top_p": 1
         ]
-
+        
         request.httpBody = try? JSONSerialization.data(withJSONObject: requestBody, options: [])
-
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
             guard let data = data, error == nil else {
                 print("API Request failed: \(error?.localizedDescription ?? "Unknown error")")
                 completion("Error: Unable to fetch response.")
                 return
             }
-
+            
             do {
                 if let jsonResponse = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let choices = jsonResponse["choices"] as? [[String: Any]] {
@@ -238,5 +276,34 @@ struct NewView: View {
         }
         
         return attributedString
+    }
+    
+    private func formatResponse(_ text: String) -> (textOutsideCode: String, codeBlocks: [String]) {
+        let pattern = "```[a-zA-Z]*\\n([\\s\\S]*?)```"
+        var textOutsideCode = text
+        var codeBlocks: [String] = []
+        
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: [])
+            let nsText = text as NSString
+            let matches = regex.matches(in: text, range: NSRange(location: 0, length: nsText.length))
+            
+            for match in matches.reversed() {
+                let range = match.range(at: 1)
+                if let swiftRange = Range(range, in: text) {
+                    let codeBlock = String(text[swiftRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                    codeBlocks.append(codeBlock)
+                    
+                    // Remove code block from the main text
+                    if let fullMatchRange = Range(match.range, in: text) {
+                        textOutsideCode = textOutsideCode.replacingOccurrences(of: String(text[fullMatchRange]), with: "")
+                    }
+                }
+            }
+        } catch {
+            print("Regex error: \(error.localizedDescription)")
+        }
+        
+        return (textOutsideCode.trimmingCharacters(in: .whitespacesAndNewlines), codeBlocks)
     }
 }

@@ -26,7 +26,7 @@ struct HomeScreen: View {
             }
         }
         
-        let apiKey = ""
+        let apiKey = "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"
         let apiURL = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
         
         var request = URLRequest(url: apiURL)
