@@ -64,7 +64,7 @@ struct SplashScreen: View {
 
     // **Fetch trending prompts function**
     func fetchTrendingPrompts() {
-        let apiKey = "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"
+        let apiKey = ""
         let apiURL = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
 
         var request = URLRequest(url: apiURL)

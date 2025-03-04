@@ -32,6 +32,27 @@ struct NewView: View {
                                     Spacer()
                                 }
                                 .id(id) // Assign ID for auto-scrolling
+                                .contextMenu {
+                                    Button(action: {
+                                        UIPasteboard.general.string = userMessage
+                                        showCopyAlert = true // Show success alert
+                                    }) {
+                                        Label("Copy", systemImage: "doc.on.doc")
+                                    }
+                                    
+                                    Button(action: {
+                                        let activityVC = UIActivityViewController(activityItems: [userMessage], applicationActivities: nil)
+                                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                           let rootViewController = windowScene.windows.first?.rootViewController {
+                                            rootViewController.present(activityVC, animated: true, completion: nil)
+                                        }
+                                    }) {
+                                        Label("Share", systemImage: "square.and.arrow.up")
+                                    }
+                                }
+                                .alert(isPresented: $showCopyAlert) {
+                                    Alert(title: Text("Success"), message: Text("Message copied successfully!"), dismissButton: .default(Text("OK")))
+                                }
                                 
                                 // AI Response Bubble (with AI Icon)
                                 HStack(alignment: .top, spacing: 8) {
@@ -61,18 +82,46 @@ struct NewView: View {
                                                                     .cornerRadius(8)
                                                             }
                                                             
-                                                            Button(action: {
-                                                                UIPasteboard.general.string = codeBlock
-                                                                showCopyAlert = true // Trigger alert
-                                                            }) {
-                                                                HStack(spacing: 2){
-                                                                    Image(systemName: "doc.on.doc")
-                                                                        .font(.subheadline)
-                                                                    Text("Copy Code")
-                                                                        .font(.custom("LexendDeca-Regular", size: 16))
+                                                            HStack(spacing: 12) {
+                                                                // Copy Code Button
+                                                                Button(action: {
+                                                                    UIPasteboard.general.string = codeBlock
+                                                                    showCopyAlert = true // Show success alert
+                                                                }) {
+                                                                    HStack(spacing: 4) {
+                                                                        Image(systemName: "doc.on.doc")
+                                                                            .font(.footnote)
+                                                                        Text("Copy Code")
+                                                                            .font(.custom("LexendDeca-Regular", size: 12))
+                                                                    }
+                                                                    .foregroundColor(.primary)
+                                                                    .padding(8)
+                                                                    .background(.secondary.opacity(0.4))
+                                                                    .cornerRadius(8)
+                                                                    
                                                                 }
-                                                                .foregroundColor(.primary)
+
+                                                                // Share Code Button
+                                                                Button(action: {
+                                                                    let activityVC = UIActivityViewController(activityItems: [codeBlock], applicationActivities: nil)
+                                                                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                                                       let rootViewController = windowScene.windows.first?.rootViewController {
+                                                                        rootViewController.present(activityVC, animated: true, completion: nil)
+                                                                    }
+                                                                }) {
+                                                                    HStack(spacing: 4) {
+                                                                        Image(systemName: "square.and.arrow.up")
+                                                                            .font(.footnote)
+                                                                        Text("Share Code")
+                                                                            .font(.custom("LexendDeca-Regular", size: 12))
+                                                                    }
+                                                                    .foregroundColor(.primary)
+                                                                    .padding(8)
+                                                                    .background(.secondary.opacity(0.4))
+                                                                    .cornerRadius(8)
+                                                                }
                                                             }
+                                                            .padding(.bottom)
                                                             .alert(isPresented: $showCopyAlert) {
                                                                 Alert(title: Text("Success"), message: Text("Code copied successfully!"), dismissButton: .default(Text("OK")))
                                                             }
@@ -83,6 +132,24 @@ struct NewView: View {
                                             .padding()
                                             .background(Color.purple.opacity(0.2)) // Violet background for the full response
                                             .clipShape(RoundedRectangle(cornerRadius: 16))
+                                            .contextMenu {
+                                                Button(action: {
+                                                    UIPasteboard.general.string = aiResponse
+                                                    showCopyAlert = true // Show success alert
+                                                }) {
+                                                    Label("Copy", systemImage: "doc.on.doc")
+                                                }
+                                                
+                                                Button(action: {
+                                                    let activityVC = UIActivityViewController(activityItems: [aiResponse], applicationActivities: nil)
+                                                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                                       let rootViewController = windowScene.windows.first?.rootViewController {
+                                                        rootViewController.present(activityVC, animated: true, completion: nil)
+                                                    }
+                                                }) {
+                                                    Label("Share", systemImage: "square.and.arrow.up")
+                                                }
+                                            }
                                         }
                                     } else {
                                         LoadingDotsView()
@@ -92,6 +159,9 @@ struct NewView: View {
                                     Spacer()
                                 }
                                 .id(id + 1) // Assign ID for AI response
+                                .alert(isPresented: $showCopyAlert) {
+                                    Alert(title: Text("Success"), message: Text("Text copied successfully!"), dismissButton: .default(Text("OK")))
+                                }
                             }
                         }
                     }
@@ -194,7 +264,7 @@ struct NewView: View {
     }
     
     private func fetchAIResponse(for prompt: String, completion: @escaping (String) -> Void) {
-        let apiKey = "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"
+        let apiKey = ""
         let apiURL = URL(string: "https://api.groq.com/openai/v1/chat/completions")!
         
         var request = URLRequest(url: apiURL)
